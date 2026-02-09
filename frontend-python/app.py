@@ -49,12 +49,12 @@ menu = st.sidebar.radio(
 # Mock de dados caso a API esteja fora (Para demonstração inicial)
 def get_mock_data():
     return pd.DataFrame([
-        {"name": "Porcelanato Retificado 60x60", "category": "Acabamentos", "supplier": "Leroy Merlin", "price": 89.90, "unit": "m2"},
-        {"name": "Porcelanato Retificado 60x60", "category": "Acabamentos", "supplier": "Obramax", "price": 84.50, "unit": "m2"},
-        {"name": "Cimento CP II 50kg", "category": "Materiais Brutos", "supplier": "Obramax", "price": 32.90, "unit": "saco"},
-        {"name": "Cimento CP II 50kg", "category": "Materiais Brutos", "supplier": "Telhanorte", "price": 35.00, "unit": "saco"},
-        {"name": "Luminária Pendente Industrial", "category": "Estética", "supplier": "Tok&Stok", "price": 250.00, "unit": "unid"},
-        {"name": "Luminária Pendente Industrial", "category": "Estética", "supplier": "MadeiraMadeira", "price": 198.00, "unit": "unid"},
+        {"name": "Porcelanato Retificado 60x60", "category": "Acabamentos", "supplier": "Leroy Merlin", "price": 89.90, "unit": "m2", "image": "https://img.ibxk.com.br/2020/01/30/30101509121100.jpg"},
+        {"name": "Porcelanato Retificado 60x60", "category": "Acabamentos", "supplier": "Obramax", "price": 84.50, "unit": "m2", "image": "https://img.ibxk.com.br/2020/01/30/30101509121100.jpg"},
+        {"name": "Cimento CP II 50kg", "category": "Materiais Brutos", "supplier": "Obramax", "price": 32.90, "unit": "saco", "image": "https://cdn.leroymerlin.com.br/products/cimento_cp_ii_z_32_votoran_50kg_86862341_0001_600x600.jpg"},
+        {"name": "Cimento CP II 50kg", "category": "Materiais Brutos", "supplier": "Telhanorte", "price": 35.00, "unit": "saco", "image": "https://cdn.leroymerlin.com.br/products/cimento_cp_ii_z_32_votoran_50kg_86862341_0001_600x600.jpg"},
+        {"name": "Luminária Pendente Industrial", "category": "Estética", "supplier": "Tok&Stok", "price": 250.00, "unit": "unid", "image": "https://images.tcdn.com.br/img/img_prod/704153/pendente_industrial_retro_vintage_preto_fosco_diametro_30cm_5103_1_20200508110903.jpg"},
+        {"name": "Luminária Pendente Industrial", "category": "Estética", "supplier": "MadeiraMadeira", "price": 198.00, "unit": "unid", "image": "https://images.tcdn.com.br/img/img_prod/704153/pendente_industrial_retro_vintage_preto_fosco_diametro_30cm_5103_1_20200508110903.jpg"},
     ])
 
 # --- PÁGINA: DASHBOARD GERAL ---
@@ -85,39 +85,55 @@ if menu == "Dashboard Geral":
 
 # --- PÁGINA: COMPARADOR DE PREÇOS ---
 elif menu == "Comparador de Preços":
-    st.title("🔍 Comparador de Preços Inteligente")
+    st.title("🔍 Pesquisa Inteligente de Suprimentos")
     
-    search_query = st.text_input("O que você está procurando? (Ex: Porcelanato, Cimento, Luminária)", "")
+    # Campo de pesquisa com sugestões
+    df = get_mock_data()
+    all_product_names = df['name'].unique().tolist()
     
-    if search_query:
-        df = get_mock_data()
-        results = df[df['name'].str.contains(search_query, case=False)]
+    search_query = st.text_input("Digite o que você procura (Ex: cim, por, lum)", "")
+    
+    if len(search_query) >= 3:
+        # Filtragem inteligente para sugestões
+        suggestions = [p for p in all_product_names if search_query.lower() in p.lower()]
         
-        if not results.empty:
-            st.success(f"Encontramos {len(results)} ofertas para '{search_query}'")
+        if suggestions:
+            selected_product = st.selectbox("Sugestões encontradas:", suggestions)
             
-            # Ordenar por menor preço
-            results = results.sort_values(by='price')
-            
-            for index, row in results.iterrows():
-                with st.container():
-                    col_img, col_info, col_price, col_action = st.columns([1, 3, 2, 2])
-                    col_info.markdown(f"**{row['name']}**")
-                    col_info.caption(f"Categoria: {row['category']} | Fornecedor: {row['supplier']}")
-                    
-                    # Destaque para o melhor preço
-                    if index == results.index[0]:
-                        col_price.markdown(f"### R$ {row['price']:.2f}")
-                        col_price.markdown(":green[🏆 Melhor Oferta]")
-                    else:
-                        col_price.markdown(f"#### R$ {row['price']:.2f}")
-                    
-                    if col_action.button(f"Adicionar à Cotação", key=f"btn_{index}"):
-                        st.toast(f"{row['name']} adicionado!")
+            if selected_product:
+                results = df[df['name'] == selected_product]
+                
+                st.success(f"Comparando preços para: **{selected_product}**")
+                
+                # Layout com imagem lateral e comparação
+                col_left, col_right = st.columns([1, 2])
+                
+                with col_left:
+                    img_url = results.iloc[0]['image']
+                    st.image(img_url, caption=selected_product, use_container_width=True)
+                
+                with col_right:
+                    results = results.sort_values(by='price')
+                    for index, row in results.iterrows():
+                        with st.container():
+                            c_info, c_price, c_btn = st.columns([3, 2, 2])
+                            c_info.markdown(f"**{row['supplier']}**")
+                            c_info.caption(f"Categoria: {row['category']}")
+                            
+                            if index == results.index[0]:
+                                c_price.markdown(f"### R$ {row['price']:.2f}")
+                                c_price.markdown(":green[🏆 Melhor Preço]")
+                            else:
+                                c_price.markdown(f"#### R$ {row['price']:.2f}")
+                            
+                            if c_btn.button("Adicionar", key=f"add_{index}"):
+                                st.toast(f"Adicionado: {row['supplier']}")
         else:
-            st.warning("Nenhum produto encontrado com este nome.")
+            st.warning("Nenhuma sugestão encontrada para este termo.")
+    elif len(search_query) > 0:
+        st.info("Continue digitando... (mínimo 3 letras para sugestões inteligentes)")
     else:
-        st.info("Digite o nome de um material para comparar preços entre Leroy Merlin, Obramax, Tok&Stok e outros.")
+        st.info("💡 Digite o nome de um material (como 'cim' para Cimento) para ver as sugestões e comparar preços com fotos.")
 
 # --- PÁGINA: MINHAS COTAÇÕES ---
 elif menu == "Minhas Cotações":

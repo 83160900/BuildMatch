@@ -30,6 +30,11 @@ public class ProductController {
         return productRepository.findByCategory(category);
     }
 
+    @GetMapping("/search")
+    public List<Product> search(@RequestParam String q) {
+        return productRepository.findByNameContainingIgnoreCase(q);
+    }
+
     @PostMapping
     public Product create(@RequestBody Product product) {
         return productRepository.save(product);

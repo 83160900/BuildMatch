@@ -18,6 +18,7 @@ public class Product {
     private BigDecimal price;
     private String unit; // Ex: m2, kg, unidade
     private String link; // Link original do fornecedor
+    private String imageUrl; // URL da imagem do produto
     
     private LocalDateTime lastUpdate;
 
@@ -42,6 +43,8 @@ public class Product {
     public void setUnit(String unit) { this.unit = unit; }
     public String getLink() { return link; }
     public void setLink(String link) { this.link = link; }
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
     public LocalDateTime getLastUpdate() { return lastUpdate; }
     public void setLastUpdate(LocalDateTime lastUpdate) { this.lastUpdate = lastUpdate; }
 }
