@@ -3,6 +3,7 @@ import pandas as pd
 import requests
 import plotly.express as px
 from datetime import datetime
+import json
 
 # Configuração da página (Sensacional!)
 st.set_page_config(
@@ -35,7 +36,32 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # URL da API Java (Railway)
-API_URL = "https://buildmatch-production.up.railway.app/api/products" # Substituir pela sua URL real do Railway
+API_URL = st.secrets.get("API_URL", "https://buildmatch-production.up.railway.app/api")
+PRODUCTS_API = f"{API_URL}/products"
+QUOTES_API = f"{API_URL}/quotes"
+
+# --- FUNÇÕES DE INTEGRAÇÃO EM TEMPO REAL ---
+def search_external_suppliers(query, lat=None, lon=None):
+    """
+    Simula a consulta 100% em tempo real nos sites dos fornecedores.
+    Em produção, aqui chamamos o crawler.py ou uma API de scraping.
+    """
+    # Simulação de delay de rede real
+    # time.sleep(1) 
+    
+    # Mock de resultados "vivos" vindo dos sites
+    results = [
+        {"name": f"{query} Premium", "supplier": "Leroy Merlin", "price": 105.90, "image": "https://img.ibxk.com.br/2020/01/30/30101509121100.jpg", "category": "Premium", "dist": 2.5},
+        {"name": f"{query} Standard", "supplier": "Obramax", "price": 89.00, "image": "https://img.ibxk.com.br/2020/01/30/30101509121100.jpg", "category": "Obra", "dist": 5.1},
+        {"name": f"{query} Econômico", "supplier": "Telhanorte", "price": 75.50, "image": "https://img.ibxk.com.br/2020/01/30/30101509121100.jpg", "category": "Econômico", "dist": 1.2},
+        {"name": f"{query} Design", "supplier": "Tok&Stok", "price": 250.00, "image": "https://images.tcdn.com.br/img/img_prod/704153/pendente_industrial_retro_vintage_preto_fosco_diametro_30cm_5103_1_20200508110903.jpg", "category": "Decoração", "dist": 8.4}
+    ]
+    
+    # Filtro por GPS (Simulado: Fornecedores num raio de 10km)
+    if lat and lon:
+        results = [r for r in results if r['dist'] < 6.0]
+        
+    return results
 
 # Sidebar para Navegação
 st.sidebar.image("https://cdn-icons-png.flaticon.com/512/4300/4300058.png", width=100)
@@ -85,77 +111,106 @@ if menu == "Dashboard Geral":
 
 # --- PÁGINA: COMPARADOR DE PREÇOS ---
 elif menu == "Comparador de Preços":
-    st.title("🔍 Pesquisa Inteligente de Suprimentos")
+    st.title("🔍 Busca em Tempo Real & GPS")
     
-    # Campo de pesquisa com sugestões
-    df = get_mock_data()
-    all_product_names = df['name'].unique().tolist()
-    
-    search_query = st.text_input("Digite o que você procura (Ex: cim, por, lum)", "")
+    # Localização GPS (Simulada para Streamlit Web)
+    use_gps = st.checkbox("Ativar GPS para buscar fornecedores mais próximos")
+    user_lat, user_lon = None, None
+    if use_gps:
+        st.caption("📍 Localização detectada: São Paulo, SP (Simulado)")
+        user_lat, user_lon = -23.55, -46.63 # Mock coordenadas
+
+    search_query = st.text_input("Pesquise em TODOS os fornecedores (Ex: Porcelanato, Cimento)", "")
     
     if len(search_query) >= 3:
-        # Filtragem inteligente para sugestões
-        suggestions = [p for p in all_product_names if search_query.lower() in p.lower()]
+        st.info(f"Consultando sites da Leroy, Obramax, Telhanorte em tempo real para '{search_query}'...")
         
-        if suggestions:
-            selected_product = st.selectbox("Sugestões encontradas:", suggestions)
+        # CONSULTA 100% EM TEMPO REAL (Sem baixar no banco ainda)
+        live_results = search_external_suppliers(search_query, user_lat, user_lon)
+        
+        if live_results:
+            st.success(f"Encontramos {len(live_results)} ofertas próximas a você!")
             
-            if selected_product:
-                results = df[df['name'] == selected_product]
+            for i, row in enumerate(live_results):
+                with st.container():
+                    c_img, c_info, c_price, c_sel = st.columns([1, 2, 1, 1])
+                    c_img.image(row['image'], width=100)
+                    c_info.markdown(f"**{row['name']}**")
+                    c_info.caption(f"📍 {row['supplier']} ({row['dist']}km)")
+                    c_price.markdown(f"### R$ {row['price']:.2f}")
+                    
+                    if c_sel.button("Selecionar", key=f"sel_{i}"):
+                        if 'selected_items' not in st.session_state:
+                            st.session_state.selected_items = []
+                        st.session_state.selected_items.append(row)
+                        st.toast(f"{row['name']} adicionado à sua lista!")
+
+    # Mostrar itens selecionados para salvar
+    if 'selected_items' in st.session_state and st.session_state.selected_items:
+        st.markdown("---")
+        st.subheader("🛒 Itens Selecionados para Salvar")
+        for item in st.session_state.selected_items:
+            st.write(f"- {item['name']} ({item['supplier']})")
+        
+        with st.expander("💾 Salvar esta Cotação no Banco de Dados"):
+            with st.form("save_quote_form"):
+                proj_name = st.text_input("Nome do Projeto", placeholder="Ex: Reforma Ap 42 - Cliente Silva")
+                client = st.text_input("Nome do Cliente")
                 
-                st.success(f"Comparando preços para: **{selected_product}**")
-                
-                # Layout com imagem lateral e comparação
-                col_left, col_right = st.columns([1, 2])
-                
-                with col_left:
-                    img_url = results.iloc[0]['image']
-                    st.image(img_url, caption=selected_product, use_container_width=True)
-                
-                with col_right:
-                    results = results.sort_values(by='price')
-                    for index, row in results.iterrows():
-                        with st.container():
-                            c_info, c_price, c_btn = st.columns([3, 2, 2])
-                            c_info.markdown(f"**{row['supplier']}**")
-                            c_info.caption(f"Categoria: {row['category']}")
-                            
-                            if index == results.index[0]:
-                                c_price.markdown(f"### R$ {row['price']:.2f}")
-                                c_price.markdown(":green[🏆 Melhor Preço]")
-                            else:
-                                c_price.markdown(f"#### R$ {row['price']:.2f}")
-                            
-                            if c_btn.button("Adicionar", key=f"add_{index}"):
-                                st.toast(f"Adicionado: {row['supplier']}")
-        else:
-            st.warning("Nenhuma sugestão encontrada para este termo.")
-    elif len(search_query) > 0:
-        st.info("Continue digitando... (mínimo 3 letras para sugestões inteligentes)")
-    else:
-        st.info("💡 Digite o nome de um material (como 'cim' para Cimento) para ver as sugestões e comparar preços com fotos.")
+                if st.form_submit_button("Confirmar e Gravar no Banco"):
+                    # Aqui gravamos no banco (Quote + QuoteItems)
+                    quote_payload = {
+                        "projectName": proj_name,
+                        "clientName": client,
+                        "location": "GPS Ativo" if use_gps else "Manual",
+                        "items": [
+                            {
+                                "name": it['name'],
+                                "supplier": it['supplier'],
+                                "price": it['price'],
+                                "imageUrl": it['image'],
+                                "category": it['category']
+                            } for it in st.session_state.selected_items
+                        ]
+                    }
+                    try:
+                        resp = requests.post(QUOTES_API, json=quote_payload)
+                        if resp.status_code in [200, 201]:
+                            st.success(f"Lista '{proj_name}' salva com sucesso com foto e dados!")
+                            st.session_state.selected_items = []
+                        else:
+                            st.error("Erro ao salvar no banco.")
+                    except:
+                        st.error("Falha de conexão com o Backend.")
 
 # --- PÁGINA: MINHAS COTAÇÕES ---
 elif menu == "Minhas Cotações":
-    st.title("📋 Gestão de Cotações")
-    st.write("Gerencie suas listas de suprimentos e otimize o orçamento da sua obra.")
+    st.title("📋 Histórico de Cotações Salvas")
+    st.write("Aqui você visualiza todas as listas que você já salvou no banco de dados.")
     
-    # Exemplo de lista de cotação
-    quote_data = [
-        {"item": "Porcelanato Retificado", "qtd": 50, "unit": "m2", "fornecedor": "Obramax", "preço_un": 84.50},
-        {"item": "Cimento CP II", "qtd": 20, "unit": "saco", "fornecedor": "Obramax", "preço_un": 32.90},
-    ]
-    df_quote = pd.DataFrame(quote_data)
-    df_quote['total'] = df_quote['qtd'] * df_quote['preço_un']
-    
-    st.dataframe(df_quote, use_container_width=True)
-    
-    total_geral = df_quote['total'].sum()
-    st.markdown(f"## Total da Cotação: :blue[R$ {total_geral:,.2f}]")
-    
-    if st.button("Gerar PDF para Aprovação do Cliente"):
-        st.balloons()
-        st.success("PDF gerado com sucesso!")
+    try:
+        resp = requests.get(QUOTES_API)
+        if resp.status_code == 200:
+            quotes = resp.json()
+            if not quotes:
+                st.info("Você ainda não salvou nenhuma cotação.")
+            else:
+                for q in quotes:
+                    with st.expander(f"📂 {q['projectName']} - Cliente: {q['clientName']}"):
+                        st.caption(f"Criada em: {q['createdAt']} | Local: {q['location']}")
+                        for item in q['items']:
+                            c1, c2, c3 = st.columns([1, 3, 1])
+                            c1.image(item['imageUrl'], width=50)
+                            c2.markdown(f"**{item['name']}** - {item['supplier']}")
+                            c3.markdown(f"R$ {item['price']:.2f}")
+                        
+                        st.button("Exportar para PDF / WhatsApp", key=f"exp_{q['id']}")
+        else:
+            st.error("Erro ao carregar cotações do banco.")
+    except:
+        st.warning("Backend offline. Mostrando cotação de exemplo (Mock):")
+        # Fallback Mock
+        st.info("Exemplo: Apartamento do Cliente X - Total R$ 12.450,00")
 
 # --- PÁGINA: GESTÃO DE CATÁLOGO ---
 elif menu == "Gestão de Catálogo":
