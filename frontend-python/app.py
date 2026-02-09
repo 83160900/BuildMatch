@@ -54,10 +54,10 @@ def search_external_suppliers(query, lat=None, lon=None):
     
     # Mock de resultados "vivos" vindo dos sites
     results = [
-        {"name": f"{query} Premium", "supplier": "Leroy Merlin", "price": 105.90, "image": "https://img.ibxk.com.br/2020/01/30/30101509121100.jpg", "category": "Premium", "dist": 2.5},
-        {"name": f"{query} Standard", "supplier": "Obramax", "price": 89.00, "image": "https://img.ibxk.com.br/2020/01/30/30101509121100.jpg", "category": "Obra", "dist": 5.1},
-        {"name": f"{query} Econômico", "supplier": "Telhanorte", "price": 75.50, "image": "https://img.ibxk.com.br/2020/01/30/30101509121100.jpg", "category": "Econômico", "dist": 1.2},
-        {"name": f"{query} Design", "supplier": "Tok&Stok", "price": 250.00, "image": "https://images.tcdn.com.br/img/img_prod/704153/pendente_industrial_retro_vintage_preto_fosco_diametro_30cm_5103_1_20200508110903.jpg", "category": "Decoração", "dist": 8.4}
+        {"name": f"{query} Premium", "supplier": "Leroy Merlin", "price": 105.90, "imageUrl": "https://img.ibxk.com.br/2020/01/30/30101509121100.jpg", "link": "https://www.leroymerlin.com.br", "category": "Premium", "dist": 2.5},
+        {"name": f"{query} Standard", "supplier": "Obramax", "price": 89.00, "imageUrl": "https://img.ibxk.com.br/2020/01/30/30101509121100.jpg", "link": "https://www.obramax.com.br", "category": "Obra", "dist": 5.1},
+        {"name": f"{query} Econômico", "supplier": "Telhanorte", "price": 75.50, "imageUrl": "https://img.ibxk.com.br/2020/01/30/30101509121100.jpg", "link": "https://www.telhanorte.com.br", "category": "Econômico", "dist": 1.2},
+        {"name": f"{query} Design", "supplier": "Tok&Stok", "price": 250.00, "imageUrl": "https://images.tcdn.com.br/img/img_prod/704153/pendente_industrial_retro_vintage_preto_fosco_diametro_30cm_5103_1_20200508110903.jpg", "link": "https://www.tokstok.com.br", "category": "Decoração", "dist": 8.4}
     ]
     
     # Filtro por GPS (Simulado: Fornecedores num raio de 10km)
@@ -137,9 +137,10 @@ elif menu == "Comparador de Preços":
             for i, row in enumerate(live_results):
                 with st.container():
                     c_img, c_info, c_price, c_sel = st.columns([1, 2, 1, 1])
-                    c_img.image(row['image'], width=100)
+                    c_img.image(row['imageUrl'], width=100)
                     c_info.markdown(f"**{row['name']}**")
                     c_info.caption(f"📍 {row['supplier']} ({row['dist']}km)")
+                    c_info.markdown(f"[🔗 Ver no Site]({row['link']})")
                     c_price.markdown(f"### R$ {row['price']:.2f}")
                     
                     if c_sel.button("Selecionar", key=f"sel_{i}"):
@@ -171,7 +172,8 @@ elif menu == "Comparador de Preços":
                                 "name": it['name'],
                                 "supplier": it['supplier'],
                                 "price": it['price'],
-                                "imageUrl": it['image'],
+                                "imageUrl": it['imageUrl'],
+                                "productLink": it['link'],
                                 "category": it['category']
                             } for it in st.session_state.selected_items
                         ]
