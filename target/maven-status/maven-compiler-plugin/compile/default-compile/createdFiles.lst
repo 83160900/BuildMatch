@@ -1,0 +1,5 @@
+com\buildmatch\repository\ProductRepository.class
+com\buildmatch\HelloController.class
+com\buildmatch\controller\ProductController.class
+com\buildmatch\model\Product.class
+com\buildmatch\BuildMatchApplication.class
