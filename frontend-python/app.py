@@ -36,6 +36,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
+# build_id: 20260209_forced_cleanup
 # URL da API Java (Railway)
 # Removemos st.secrets para evitar erros de build no Railway
 API_URL = os.getenv("API_URL", "https://buildmatch-homolog.up.railway.app/api")

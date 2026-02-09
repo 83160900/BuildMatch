@@ -1,0 +1,8 @@
+[phases.setup]
+nixpkgsArchive = "f5f7957" # Fixa uma versão estável para evitar erros de ambiente
+
+[phases.build]
+cmds = ["pip install -r requirements.txt"]
+
+[start]
+cmd = "streamlit run app.py --server.port $PORT --server.headless true"
