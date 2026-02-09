@@ -4,6 +4,7 @@ import requests
 import plotly.express as px
 from datetime import datetime
 import json
+import os
 
 # Configuração da página (Sensacional!)
 st.set_page_config(
@@ -36,7 +37,12 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # URL da API Java (Railway)
-API_URL = st.secrets.get("API_URL", "https://buildmatch-production.up.railway.app/api")
+# Tentamos pegar do st.secrets, se não existir, pegamos do ambiente, se não, usamos o padrão
+try:
+    API_URL = st.secrets.get("API_URL", os.getenv("API_URL", "https://buildmatch-production.up.railway.app/api"))
+except:
+    API_URL = os.getenv("API_URL", "https://buildmatch-production.up.railway.app/api")
+
 PRODUCTS_API = f"{API_URL}/products"
 QUOTES_API = f"{API_URL}/quotes"
 
