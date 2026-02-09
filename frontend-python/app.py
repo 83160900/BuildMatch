@@ -75,7 +75,7 @@ st.sidebar.title("BuildMatch")
 st.sidebar.markdown("---")
 menu = st.sidebar.radio(
     "Navegação",
-    ["Dashboard Geral", "Comparador de Preços", "Minhas Cotações", "Gestão de Catálogo"]
+    ["Dashboard Geral", "Comparador de Preços", "Cadastrar Novo Projeto", "Histórico de Cotações", "Gestão de Catálogo"]
 )
 
 # Mock de dados caso a API esteja fora (Para demonstração inicial)
@@ -189,8 +189,40 @@ elif menu == "Comparador de Preços":
                     except:
                         st.error("Falha de conexão com o Backend.")
 
-# --- PÁGINA: MINHAS COTAÇÕES ---
-elif menu == "Minhas Cotações":
+# --- PÁGINA: CADASTRAR NOVO PROJETO ---
+elif menu == "Cadastrar Novo Projeto":
+    st.title("📂 Cadastro de Projetos & Listas")
+    st.write("Crie o perfil do projeto para organizar suas consultas de materiais.")
+    
+    with st.form("new_project_form"):
+        st.subheader("Dados do Novo Projeto")
+        title = st.text_input("Título do Projeto", placeholder="Ex: Reforma Casa da Praia")
+        client = st.text_input("Nome do Cliente", placeholder="Ex: Sr. João da Silva")
+        address = st.text_area("Endereço / Local da Obra", placeholder="Rua das Palmeiras, 123 - Guarujá/SP")
+        
+        if st.form_submit_button("Cadastrar Projeto no Hub"):
+            if title and client:
+                # Payload para o Backend
+                payload = {
+                    "projectName": title,
+                    "clientName": client,
+                    "location": address,
+                    "items": [] # Começa vazio
+                }
+                try:
+                    resp = requests.post(QUOTES_API, json=payload)
+                    if resp.status_code in [200, 201]:
+                        st.success(f"Projeto '{title}' cadastrado com sucesso! Agora você pode adicionar materiais a ele no Comparador.")
+                        st.balloons()
+                    else:
+                        st.error("Erro ao salvar projeto no banco.")
+                except:
+                    st.error("Falha de conexão com o Backend.")
+            else:
+                st.warning("Por favor, preencha o Título e o Nome do Cliente.")
+
+# --- PÁGINA: HISTÓRICO DE COTAÇÕES ---
+elif menu == "Histórico de Cotações":
     st.title("📋 Histórico de Cotações Salvas")
     st.write("Aqui você visualiza todas as listas que você já salvou no banco de dados.")
     
