@@ -1,0 +1,1 @@
+web: java -jar target/buildmatch-0.0.1-SNAPSHOT.jar
