@@ -37,11 +37,8 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # URL da API Java (Railway)
-# Tentamos pegar do st.secrets, se não existir, pegamos do ambiente, se não, usamos o padrão
-try:
-    API_URL = st.secrets.get("API_URL", os.getenv("API_URL", "https://buildmatch-production.up.railway.app/api"))
-except:
-    API_URL = os.getenv("API_URL", "https://buildmatch-production.up.railway.app/api")
+# Removemos st.secrets para evitar erros de build no Railway
+API_URL = os.getenv("API_URL", "https://buildmatch-homolog.up.railway.app/api")
 
 PRODUCTS_API = f"{API_URL}/products"
 QUOTES_API = f"{API_URL}/quotes"
